@@ -24,7 +24,7 @@ every change to the page arrives as a reviewable diff.
 |---|---|---|
 | Generator | [Astro 7](https://astro.build), static output | One HTML file, one stylesheet, one icon |
 | Host | Cloudflare Pages, GitHub Pages, or both | A key in the config decides; no code changes |
-| Data | A JSON snapshot committed to the repo | Builds offline and deterministically; every catalogue change is a reviewable diff |
+| Data | A JSON snapshot committed to the repo | Builds need no network; every catalogue change is a reviewable diff |
 | Filtering | Plain JavaScript in the page | No framework runtime and no bundle to audit |
 | Server | none | Nothing to patch, restart or pay for |
 | Database | none | Nothing to back up, migrate or leak |
@@ -32,8 +32,9 @@ every change to the page arrives as a reviewable diff.
 | Build | Node 22 or later | One command, no network |
 | Licence | MIT | Fork it and change the brand |
 
-Measured: the whole site is **three files and about 110 KB**. The catalogue is
-inlined into the page for search, so filtering makes no network request.
+Measured on a catalogue of 53 repositories: **three files, 110 KB**. The
+catalogue is inlined into the page for search, so filtering makes no network
+request.
 
 **What it does**
 
