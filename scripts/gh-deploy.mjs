@@ -266,7 +266,13 @@ async function main() {
   fs.rmSync(staging, { recursive: true, force: true });
 
   if (AS_JSON) process.stdout.write(`${JSON.stringify(summary, null, 2)}\n`);
-  else note(`✓ Published ${githubPages.site}`);
+  else {
+    // "Pushed", not "published": a push is a fact this script can see, and a
+    // live site is not. Claiming otherwise is what let a previous deploy report
+    // success while a rule no API call could see was redirecting every request.
+    note(`✓ pushed ${files.length} files to ${repo.owner}/${repo.name}:${branch}`);
+    note(`  expected at ${githubPages.site}`);
+  }
 }
 
 main().catch((err) => {

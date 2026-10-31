@@ -85,7 +85,7 @@ npm run deploy -- --skip-build  # upload dist/ as it stands
 **5. Verify.** Fetch every hostname and count the cards. The tool does this
 itself; read its output rather than repeating the claim.
 
-## The four failures, and what each looks like
+## The failures, and what each looks like
 
 | Symptom | Cause | What to do |
 |---|---|---|
@@ -95,8 +95,48 @@ itself; read its output rather than repeating the claim.
 | `npm run refresh` aborts with a rate-limit message | GitHub anonymous limit is 60 requests an hour | Use `GITHUB_TOKEN=$(gh auth token)` |
 | Page returns 200 but has no styling | `.nojekyll` is missing, so Jekyll dropped `_astro/` | `gh-deploy.mjs` writes it; a hand-rolled push must too |
 | The custom domain vanished after a deploy | The force-push replaced the branch and the `CNAME` file went with it | Regenerate `CNAME` from `deploy.githubPages.customDomain` into the artifact |
-| Assets 404 only on `*.github.io/<repo>/` | The build ran without `base` | Use `npm run build:gh`; the prefix is derived, never hand-written |
+| Assets 404 only on `*.github.io/<repo>/` | The build ran without `base` | Use `npm run build:gh`; the prefix is derived, never hand-written. `BASE_URL` has **no trailing slash**, so `${BASE_URL}favicon.svg` produces `/repofavicon.svg` — normalise it once in the layout |
 | Links break right after adding a domain | GitHub changes the routing path without rebuilding | `npm run deploy:gh -- --force` |
+| Pages build errors with "Page build failed" right after changing the domain | The branch's `CNAME` file and the site's custom-domain setting disagree | Redeploy, then change the file and the setting together — see below |
+| HTTPS serves a `*.github.io` certificate | The custom-domain certificate has not been issued yet | Wait; check `openssl s_client -servername <domain>` until the subject is the domain, then enforce |
+| `POST /pages` answers `409 already enabled` | The pushed `CNAME` file attached the domain by itself | Nothing to do; read the state instead of assuming a fresh site |
+| `GET /zones` returns an empty list | The token is account-owned and has no zone scope | Mint a zone-scoped token; see below |
+
+## Moving a domain from one host to another
+
+Done once, on a live site, and the order is what kept it up. Follow it.
+
+1. **Serve it on the new host first**, under its default URL, and check the
+   page and its **stylesheet**. Do not touch DNS yet.
+2. **Snapshot the zone.** `GET /dns_records` to a file. You will need it for
+   rollback and to see what else lives on that name.
+3. **Look before deleting.** The apex is frequently a `CNAME` to the old host,
+   flattened by the proxy — not the `A` records you expect. And the same name
+   often carries `MX` (email routing) and `TXT` (SPF, site verification).
+   Match `A`, `AAAA` and `CNAME` at the two names and nothing else. A script
+   that empties the name takes the mail with it.
+4. **Unproxy.** GitHub must see the DNS itself. Proxied records break domain
+   verification and certificate issuance.
+5. **Point `www` at `<owner>.github.io`**, never at the apex: GitHub documents
+   that a subdomain aimed at the apex breaks HTTPS.
+6. **Wait for the certificate.** Until it is issued, HTTPS answers with
+   GitHub's `*.github.io` wildcard and every browser rejects it. Only then set
+   `https_enforced`, or you will redirect traffic onto a failing certificate.
+7. **Detach the old host last**, once the new one answers. Not before.
+
+Rollback is the snapshot: recreate the old records as they were. Keep it until
+step 7 has passed.
+
+**A `CNAME` file and the domain setting are one fact in two places.** Clearing
+one while the file still names the domain fails the build. Change both, or
+neither — and redeploy immediately after either.
+
+**DNS needs its own credential.** Account-owned tokens cannot reach
+`/dns_records` at all, whatever their permissions look like. Mint a token scoped
+to `com.cloudflare.api.account.zone.<zone id>` with `DNS Read` and `DNS Write`,
+give it the shortest expiry the change allows, write it to a `0600` file rather
+than printing it, and delete the token when you are done. A permanent DNS
+credential for a one-off change is a risk taken for nothing.
 
 ## Scripts used
 
