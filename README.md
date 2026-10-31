@@ -191,6 +191,29 @@ installed and no config is written.
 Every script in `scripts/` also accepts `--json` and `--dry-run`, so an agent
 can ask what a command would do before it does it.
 
+## The essay
+
+The long-form write-up of this project is published at
+[bruj0.github.io/reposhowcase](https://bruj0.github.io/reposhowcase/), built
+with MkDocs Material from `essay/` and deployed to the `gh-pages` branch by
+`.github/workflows/docs.yml`.
+
+The canonical text lives in the author's `personal-docs` repository.
+`essay/index.md` is generated, never hand-edited:
+
+```bash
+node scripts/sync-essay.mjs           # regenerate essay/index.md
+node scripts/sync-essay.mjs --check   # exit 1 when the copy has drifted
+```
+
+`ESSAY_SOURCE` overrides the canonical path. To build the page locally:
+
+```bash
+uv venv .venv --python 3.12
+uv pip install --python .venv/bin/python -r requirements-docs.txt
+.venv/bin/mkdocs build --strict --site-dir _site   # or: .venv/bin/mkdocs serve
+```
+
 ## The sample catalogue
 
 `src/data/repos.json` ships with six public repositories — Ansible,

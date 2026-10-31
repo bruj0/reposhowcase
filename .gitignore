@@ -6,3 +6,9 @@ dist/
 .env
 .env.*
 !.env.example
+
+# MkDocs build output and the local virtualenv the docs build uses.
+/site/
+/_site/
+.venv/
+__pycache__/
