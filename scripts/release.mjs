@@ -128,6 +128,24 @@ function transformManifest(manifest) {
 }
 
 /**
+ * Rewrite the lockfile's package name to match the manifest.
+ *
+ * The lockfile records the name twice — at the root and under `packages[""]`
+ * — and copying it verbatim left the product's lockfile announcing the
+ * instance's name. `npm ci` then disagrees with `package.json`, and the name
+ * leaks through a file nobody thinks to grep.
+ *
+ * @param {string} lockfile Raw `package-lock.json`.
+ * @returns {string}
+ */
+function transformLockfile(lockfile) {
+  const lock = JSON.parse(lockfile);
+  lock.name = PRODUCT_NAME;
+  if (lock.packages?.['']) lock.packages[''].name = PRODUCT_NAME;
+  return `${JSON.stringify(lock, null, 2)}\n`;
+}
+
+/**
  * The product tree, as a path-to-bytes map.
  *
  * Building the whole tree in memory is what makes `--check` and `--sync` agree
@@ -167,6 +185,13 @@ function expectedTree() {
     'package.json',
     Buffer.from(transformManifest(fs.readFileSync(path.join(root, 'package.json'), 'utf8'))),
   );
+
+  if (out.has('package-lock.json')) {
+    out.set(
+      'package-lock.json',
+      Buffer.from(transformLockfile(fs.readFileSync(path.join(root, 'package-lock.json'), 'utf8'))),
+    );
+  }
 
   return out;
 }
