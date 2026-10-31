@@ -3,9 +3,16 @@
   "productionBranch": "main",
   "buildOutputDir": "dist",
   "githubOwner": "octocat",
-  "customDomains": [],
   "tokenExpiryDays": 365,
   "deployTokenName": "reposhowcase-pages-deploy",
+  "deploy": {
+    "targets": [
+      "github-pages"
+    ],
+    "githubPages": {
+      "branch": "gh-pages"
+    }
+  },
   "brand": {
     "name": "Repo Showcase",
     "eyebrow": "Sample catalogue",

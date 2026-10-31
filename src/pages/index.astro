@@ -35,11 +35,11 @@ const buildStamp = fetchedAt.toISOString();
       <div class="hero-stats">
         <div>
           <span class="stat-value accent">{repos.length}</span>
-          <span class="stat-label">Applications shipped</span>
+          <span class="stat-label">{repos.length === 1 ? 'Application shipped' : 'Applications shipped'}</span>
         </div>
         <div>
           <span class="stat-value">{languageCount}</span>
-          <span class="stat-label">Languages in production</span>
+          <span class="stat-label">{languageCount === 1 ? 'Language in production' : 'Languages in production'}</span>
         </div>
         <div>
           <span class="stat-value">{liveSites}</span>
@@ -105,7 +105,7 @@ const buildStamp = fetchedAt.toISOString();
       <div class="section-head">
         <span class="section-index">02</span>
         <h2 class="section-title">The catalogue</h2>
-        <span class="section-note">{repos.length} public applications, created not forked</span>
+        <span class="section-note">{repos.length} public {repos.length === 1 ? 'application' : 'applications'}, created not forked</span>
       </div>
 
       <Catalogue repos={repos} domains={domains} />

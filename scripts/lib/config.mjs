@@ -33,6 +33,12 @@ const HOSTNAME = /^(?=.{1,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}
 /** A `{placeholder}` inside a brand string. */
 const PLACEHOLDER = /\{([a-zA-Z0-9_]+)\}/g;
 
+/** The hosts this build knows how to publish to. */
+export const DEPLOY_TARGETS = ['cloudflare-pages', 'github-pages'];
+
+/** A repository name, optionally `owner/name`. */
+const REPOSITORY = /^[A-Za-z0-9._-]+(\/[A-Za-z0-9._-]+)?$/;
+
 /** Raised when the config is unusable. Names the key that is wrong. */
 export class ConfigError extends Error {
   /**
@@ -158,6 +164,166 @@ export function loadConfig(file = CONFIG_PATH) {
 }
 
 /**
+ * Normalise one hostname list: lowercase, strip a trailing dot, and reject a
+ * duplicate or anything that is not a hostname.
+ *
+ * @param {unknown} value
+ * @param {string} key Dotted path, for the error message.
+ * @returns {string[]}
+ */
+function hostnameList(value, key) {
+  const names = stringList(value, key).map((domain) => {
+    const name = domain.trim().toLowerCase().replace(/\.$/, '');
+    if (!HOSTNAME.test(name)) {
+      throw new ConfigError(key, `contains "${domain}", which is not a hostname`);
+    }
+    return name;
+  });
+  if (new Set(names).size !== names.length) {
+    throw new ConfigError(key, 'contains a duplicate hostname');
+  }
+  return names;
+}
+
+/**
+ * The hostnames a GitHub Pages custom domain answers for.
+ *
+ * GitHub redirects between an apex and its `www` once the records exist, so
+ * choosing one of them claims both. Both are checked against the other target,
+ * because a hostname served by two hosts is a coin toss at resolve time rather
+ * than a configuration.
+ *
+ * @param {string} domain
+ * @returns {string[]}
+ */
+function claimedHostnames(domain) {
+  return domain.startsWith('www.')
+    ? [domain, domain.slice(4)]
+    : [domain, `www.${domain}`];
+}
+
+/**
+ * Validate and resolve the `deploy` block.
+ *
+ * This block is the only place a deployment target is chosen. `basePath` and
+ * `site` are derived rather than stated, because they follow from the target
+ * and the repository name — and a second place to write them is a second place
+ * to be wrong.
+ *
+ * @param {unknown} raw Parsed config.
+ * @param {string} projectName
+ * @param {string} githubOwner
+ * @returns {object}
+ */
+export function validateDeploy(raw, projectName, githubOwner) {
+  const deployRaw = raw?.deploy ?? {};
+  if (typeof deployRaw !== 'object' || deployRaw === null) {
+    throw new ConfigError('deploy', 'must be an object');
+  }
+
+  const targets = stringList(deployRaw.targets, 'deploy.targets');
+  if (targets.length === 0) {
+    throw new ConfigError('deploy.targets', 'must list at least one target');
+  }
+  for (const target of targets) {
+    if (!DEPLOY_TARGETS.includes(target)) {
+      throw new ConfigError(
+        'deploy.targets',
+        `contains "${target}", which is not a known target (${DEPLOY_TARGETS.join(', ')})`,
+      );
+    }
+  }
+  if (new Set(targets).size !== targets.length) {
+    throw new ConfigError('deploy.targets', 'contains a duplicate target');
+  }
+
+  const cfRaw = deployRaw.cloudflarePages ?? {};
+  if (typeof cfRaw !== 'object' || cfRaw === null) {
+    throw new ConfigError('deploy.cloudflarePages', 'must be an object');
+  }
+  const cloudflareDomains = hostnameList(
+    cfRaw.customDomains,
+    'deploy.cloudflarePages.customDomains',
+  );
+
+  const ghRaw = deployRaw.githubPages ?? {};
+  if (typeof ghRaw !== 'object' || ghRaw === null) {
+    throw new ConfigError('deploy.githubPages', 'must be an object');
+  }
+
+  // Omitted means "the repository this build lives in", which is what a public
+  // repository needs and what needs no credential to push to.
+  let repository = null;
+  if (ghRaw.repository !== undefined && ghRaw.repository !== null) {
+    const value = requireString(ghRaw, 'repository', 'deploy.githubPages.');
+    if (!REPOSITORY.test(value)) {
+      throw new ConfigError(
+        'deploy.githubPages.repository',
+        `must be "name" or "owner/name" (got "${value}")`,
+      );
+    }
+    repository = value;
+  }
+
+  const branch =
+    typeof ghRaw.branch === 'string' && ghRaw.branch.trim() !== ''
+      ? ghRaw.branch.trim()
+      : 'gh-pages';
+
+  let customDomain = null;
+  if (ghRaw.customDomain !== undefined && ghRaw.customDomain !== null) {
+    const value = requireString(ghRaw, 'customDomain', 'deploy.githubPages.');
+    const name = value.trim().toLowerCase().replace(/\.$/, '');
+    if (!HOSTNAME.test(name)) {
+      throw new ConfigError(
+        'deploy.githubPages.customDomain',
+        `is "${value}", which is not a hostname`,
+      );
+    }
+    const collision = claimedHostnames(name).find((host) =>
+      cloudflareDomains.includes(host),
+    );
+    if (collision) {
+      throw new ConfigError(
+        'deploy.githubPages.customDomain',
+        `"${collision}" is claimed by both cloudflarePages and githubPages`,
+      );
+    }
+    customDomain = name;
+  }
+
+  // A project site without a custom domain is served under a path prefix; with
+  // one, at the domain root.
+  const [owner, name] = repository
+    ? repository.includes('/')
+      ? repository.split('/')
+      : [githubOwner, repository]
+    : [githubOwner, projectName];
+
+  const githubPages = {
+    repository,
+    owner,
+    name,
+    branch,
+    customDomain,
+    basePath: customDomain ? '' : `/${name}`,
+    site: customDomain
+      ? `https://${customDomain}`
+      : `https://${owner}.github.io/${name}/`,
+  };
+
+  const cloudflarePages = {
+    projectName,
+    customDomains: cloudflareDomains,
+    site: cloudflareDomains.length
+      ? `https://${cloudflareDomains[0]}`
+      : `https://${projectName}.pages.dev`,
+  };
+
+  return { targets, cloudflarePages, githubPages };
+}
+
+/**
  * Validate an already-parsed config.
  *
  * Split from `loadConfig` because the Astro build imports the JSON through
@@ -182,16 +348,14 @@ export function validateConfig(raw) {
   const buildOutputDir = requireString(raw, 'buildOutputDir', '');
   const githubOwner = requireString(raw, 'githubOwner', '');
 
-  const customDomains = stringList(raw.customDomains, 'customDomains').map((domain) => {
-    const name = domain.trim().toLowerCase().replace(/\.$/, '');
-    if (!HOSTNAME.test(name)) {
-      throw new ConfigError('customDomains', `contains "${domain}", which is not a hostname`);
-    }
-    return name;
-  });
-  if (new Set(customDomains).size !== customDomains.length) {
-    throw new ConfigError('customDomains', 'contains a duplicate hostname');
-  }
+  // --- deploy ------------------------------------------------------------
+  // Domains belong to a target, not to the site: two hosts may own different
+  // names, and neither may claim a name the other answers for.
+  const deploy = validateDeploy(raw, projectName, githubOwner);
+
+  // Compatibility alias. `cf-setup.mjs` works on a mutable copy while it
+  // discovers zones, so it reads this rather than reaching into `deploy`.
+  const customDomains = deploy.cloudflarePages.customDomains;
 
   // --- brand -------------------------------------------------------------
   const brandRaw = raw.brand;
@@ -337,6 +501,7 @@ export function validateConfig(raw) {
     buildOutputDir,
     githubOwner,
     customDomains,
+    deploy,
     tokenExpiryDays: numberOr(raw, 'tokenExpiryDays', '', 365),
     deployTokenName:
       typeof raw.deployTokenName === 'string' && raw.deployTokenName.trim() !== ''

@@ -13,10 +13,10 @@ does, what it runs on, or whether it is finished.
 
 Repo Showcase turns the same account into a page that answers those questions:
 one card per repository, filters for what it does and where it runs, and four
-ways to sort. It is static HTML rendered by [Astro](https://astro.build) and
-published to Cloudflare Pages, so there is no server, no database, and no call
-to GitHub at runtime. The catalogue is a JSON file you commit, which means every
-change to the page arrives as a reviewable diff.
+ways to sort. It is static HTML rendered by [Astro](https://astro.build) and published to
+GitHub Pages or Cloudflare Pages, so there is no server, no database, and no
+call to GitHub at runtime. The catalogue is a JSON file you commit, which means
+every change to the page arrives as a reviewable diff.
 
 ## Why you would use it
 
@@ -24,11 +24,11 @@ change to the page arrives as a reviewable diff.
 |---|---|
 | Forty repositories and no index of them | One page, filterable by purpose, platform and language |
 | A CV that claims breadth | A page that shows it, with links that resolve |
-| No appetite for another service to run | Static files on Cloudflare Pages, no server and no database |
+| No appetite for another service to run | Static files, no server and no database |
 | A catalogue that goes stale | `npm run refresh` rewrites the data as a diff you can read |
 
-A domain is optional. Without one the site publishes to
-`<projectName>.pages.dev`, which needs no DNS permissions at all.
+A domain is optional and so is Cloudflare. Without either, the site publishes
+to GitHub Pages. See [Where it publishes](#where-it-publishes).
 
 ## Why it is built around an agent
 
@@ -72,9 +72,29 @@ src/data/repos.json     the catalogue snapshot the page renders
 
 | You need | Why | Without it |
 |---|---|---|
-| A GitHub account | The catalogue is built from its public repositories | Nothing to list |
-| A Cloudflare account | Cloudflare Pages hosts the site | You can build and preview locally, but not publish |
+| A GitHub account | The catalogue is built from its public repositories, and GitHub Pages hosts the site | Nothing to list, and nowhere to publish |
 | Node 22 or later | The build and the scripts | Nothing runs |
+| A Cloudflare account | Optional. A second host, with a CDN and preview deployments | You publish to GitHub Pages only |
+| A domain | Optional. Your own address instead of `*.github.io` | The site lives at `<owner>.github.io/<repo>/` |
+
+## Where it publishes
+
+Two hosts are supported and the config decides which ones are used.
+
+| Mode | Served at | Needs |
+|---|---|---|
+| GitHub Pages, no domain | `<owner>.github.io/<repo>/` | a GitHub account, nothing else |
+| GitHub Pages, custom domain | your domain, at its root | a GitHub account and a domain |
+| Cloudflare Pages, no domain | `<projectName>.pages.dev` | a Cloudflare account |
+| Cloudflare Pages, custom domain | your domain | a Cloudflare account and a domain |
+
+The shipped `site.config.json` uses the first mode, so `npm run deploy` works
+with nothing configured. Enabling a second host is a change to
+`deploy.targets`, not a change to any script.
+
+An agent will ask before enabling Cloudflare, and will never ask you to paste a
+secret into the conversation: the token goes in `.env`, and
+`npm run secrets:check` reports whether it is there without printing it.
 
 ## Quickstart
 
@@ -91,14 +111,12 @@ GITHUB_TOKEN=$(gh auth token) npm run refresh
 # 3. Look at it
 npm run dev
 
-# 4. Add .env (see Credentials), then publish
-set -a; . ./.env; set +a
-npm run cf:setup              # creates the Pages project, mints a deploy token
-npm run deploy
+# 4. Publish
+npm run deploy                # to <owner>.github.io/<repo>/
 ```
 
-Steps 1 to 3 need nothing but Node. Step 4 and step 5 are where credentials
-enter.
+Steps 1 to 4 need a GitHub account and nothing else. Cloudflare is an opt-in
+that adds a host; it never becomes a requirement for the first publish.
 
 ## The skill path
 
@@ -114,7 +132,7 @@ check its own work:
 | `catalogue-tag` | "tag my repos", "categorise by purpose" |
 | `catalogue-sort` | "sort by stars", "newest first" |
 | `catalogue-audit` | "which repos need a README" |
-| `site-deploy` | "deploy to Cloudflare", "set up the domain" |
+| `site-deploy` | "deploy", "publish this", "set up the domain" |
 
 `site-launch` sequences the other six and stops wherever a person has to act:
 creating a token in the Cloudflare dashboard, deleting a forwarding rule,

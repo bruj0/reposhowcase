@@ -24,6 +24,12 @@ SLUG = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 HOSTNAME = re.compile(r"^(?=.{1,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$")
 PLACEHOLDER = re.compile(r"\{([a-zA-Z0-9_]+)\}")
 
+#: The hosts this build knows how to publish to.
+DEPLOY_TARGETS = ("cloudflare-pages", "github-pages")
+
+#: A repository name, optionally ``owner/name``.
+REPOSITORY = re.compile(r"^[A-Za-z0-9._-]+(/[A-Za-z0-9._-]+)?$")
+
 
 class ConfigError(Exception):
     """Raised when the config is unusable. Names the key that is wrong."""
@@ -86,6 +92,143 @@ def render(template: str, subject: dict[str, str], context: str = "brand") -> st
     return PLACEHOLDER.sub(substitute, template)
 
 
+def _hostname_list(value, key: str) -> list[str]:
+    """Lowercase, strip a trailing dot, and reject a duplicate or a non-hostname."""
+    names = []
+    for domain in _string_list(value, key):
+        name = domain.strip().lower().rstrip(".")
+        if not HOSTNAME.match(name):
+            raise ConfigError(key, f'contains "{domain}", which is not a hostname')
+        names.append(name)
+    if len(set(names)) != len(names):
+        raise ConfigError(key, "contains a duplicate hostname")
+    return names
+
+
+def _claimed_hostnames(domain: str) -> list[str]:
+    """The hostnames a GitHub Pages custom domain answers for.
+
+    GitHub redirects between an apex and its ``www`` once the records exist, so
+    choosing one of them claims both. Both are checked against the other target,
+    because a hostname served by two hosts is a coin toss at resolve time rather
+    than a configuration.
+    """
+    if domain.startswith("www."):
+        return [domain, domain[4:]]
+    return [domain, f"www.{domain}"]
+
+
+def validate_deploy(raw: dict, project_name: str, github_owner: str) -> dict:
+    """Validate and resolve the ``deploy`` block.
+
+    This block is the only place a deployment target is chosen. ``basePath`` and
+    ``site`` are derived rather than stated, because they follow from the target
+    and the repository name — and a second place to write them is a second place
+    to be wrong.
+    """
+    deploy_raw = raw.get("deploy") or {}
+    if not isinstance(deploy_raw, dict):
+        raise ConfigError("deploy", "must be an object")
+
+    targets = _string_list(deploy_raw.get("targets"), "deploy.targets")
+    if not targets:
+        raise ConfigError("deploy.targets", "must list at least one target")
+    for target in targets:
+        if target not in DEPLOY_TARGETS:
+            known = ", ".join(DEPLOY_TARGETS)
+            raise ConfigError(
+                "deploy.targets", f'contains "{target}", which is not a known target ({known})'
+            )
+    if len(set(targets)) != len(targets):
+        raise ConfigError("deploy.targets", "contains a duplicate target")
+
+    cf_raw = deploy_raw.get("cloudflarePages") or {}
+    if not isinstance(cf_raw, dict):
+        raise ConfigError("deploy.cloudflarePages", "must be an object")
+    cloudflare_domains = _hostname_list(
+        cf_raw.get("customDomains"), "deploy.cloudflarePages.customDomains"
+    )
+
+    gh_raw = deploy_raw.get("githubPages") or {}
+    if not isinstance(gh_raw, dict):
+        raise ConfigError("deploy.githubPages", "must be an object")
+
+    # Omitted means "the repository this build lives in", which is what a public
+    # repository needs and what needs no credential to push to.
+    repository = gh_raw.get("repository")
+    if repository is not None:
+        repository = _require_string(gh_raw, "repository", "deploy.githubPages.")
+        if not REPOSITORY.match(repository):
+            raise ConfigError(
+                "deploy.githubPages.repository",
+                f'must be "name" or "owner/name" (got "{repository}")',
+            )
+
+    branch = gh_raw.get("branch")
+    if not isinstance(branch, str) or not branch.strip():
+        branch = "gh-pages"
+    else:
+        branch = branch.strip()
+
+    custom_domain = None
+    raw_domain = gh_raw.get("customDomain")
+    if raw_domain is not None:
+        value = _require_string(gh_raw, "customDomain", "deploy.githubPages.")
+        name = value.strip().lower().rstrip(".")
+        if not HOSTNAME.match(name):
+            raise ConfigError(
+                "deploy.githubPages.customDomain", f'is "{value}", which is not a hostname'
+            )
+        collision = next(
+            (host for host in _claimed_hostnames(name) if host in cloudflare_domains), None
+        )
+        if collision:
+            raise ConfigError(
+                "deploy.githubPages.customDomain",
+                f'"{collision}" is claimed by both cloudflarePages and githubPages',
+            )
+        custom_domain = name
+
+    # A project site without a custom domain is served under a path prefix; with
+    # one, at the domain root.
+    if repository is None:
+        owner, name = github_owner, project_name
+    elif "/" in repository:
+        owner, name = repository.split("/", 1)
+    else:
+        owner, name = github_owner, repository
+
+    github_pages = {
+        "repository": repository,
+        "owner": owner,
+        "name": name,
+        "branch": branch,
+        "customDomain": custom_domain,
+        "basePath": "" if custom_domain else f"/{name}",
+        "site": (
+            f"https://{custom_domain}"
+            if custom_domain
+            else f"https://{owner}.github.io/{name}/"
+        ),
+    }
+
+    cloudflare_pages = {
+        "projectName": project_name,
+        "customDomains": cloudflare_domains,
+        "site": (
+            f"https://{cloudflare_domains[0]}"
+            if cloudflare_domains
+            else f"https://{project_name}.pages.dev"
+        ),
+    }
+
+    return {
+        "targets": targets,
+        "cloudflarePages": cloudflare_pages,
+        "githubPages": github_pages,
+    }
+
+
 def load_config(file: Path | str | None = None) -> dict:
     """Load and validate the config, returning every brand string resolved."""
     path = Path(file) if file else CONFIG_PATH
@@ -105,16 +248,15 @@ def load_config(file: Path | str | None = None) -> dict:
     build_output_dir = _require_string(raw, "buildOutputDir")
     github_owner = _require_string(raw, "githubOwner")
 
-    custom_domains = []
-    for domain in _string_list(raw.get("customDomains"), "customDomains"):
-        name = domain.strip().lower().rstrip(".")
-        if not HOSTNAME.match(name):
-            raise ConfigError("customDomains", f'contains "{domain}", which is not a hostname')
-        custom_domains.append(name)
-    if len(set(custom_domains)) != len(custom_domains):
-        raise ConfigError("customDomains", "contains a duplicate hostname")
+    # --- deploy ----------------------------------------------------------
+    # Domains belong to a target, not to the site: two hosts may own different
+    # names, and neither may claim a name the other answers for.
+    deploy = validate_deploy(raw, project_name, github_owner)
 
-    # --- brand -----------------------------------------------------------
+    # Compatibility alias. `cf-setup.mjs` works on a mutable copy while it
+    # discovers zones, so it reads this rather than reaching into `deploy`.
+    custom_domains = deploy["cloudflarePages"]["customDomains"]
+
     brand_raw = raw.get("brand")
     if not isinstance(brand_raw, dict):
         raise ConfigError("brand", "must be an object")
@@ -251,6 +393,7 @@ def load_config(file: Path | str | None = None) -> dict:
         "buildOutputDir": build_output_dir,
         "githubOwner": github_owner,
         "customDomains": custom_domains,
+        "deploy": deploy,
         "tokenExpiryDays": _number_or(raw, "tokenExpiryDays", "", 365),
         "deployTokenName": deploy_token_name,
         "brand": brand,

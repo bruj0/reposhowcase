@@ -65,6 +65,7 @@ const RELEASE_FILES = [
   '.env.example',
   '.github/workflows/deploy.yml',
   'docs/deployment.md',
+  'docs/hosting.md',
 ];
 
 /**

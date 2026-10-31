@@ -34,7 +34,7 @@ been fetched and the catalogue seen in it.
 the Pages project exists and whether the hostnames serve. Resume at the first
 thing that is not done; do not restart a finished phase.
 
-**Phase 1 — the five questions.** Ask them in this order and do not invent an
+**Phase 1 — the four questions.** Ask them in this order and do not invent an
 answer to any of them:
 
 | Question | Default offered |
@@ -42,11 +42,21 @@ answer to any of them:
 | Which GitHub account? | the one `gh api user` reports |
 | What is the site called? | none — it must be told |
 | Which repositories belong? | all public, non-fork |
-| A domain, or `*.pages.dev`? | `*.pages.dev` |
-| Mint a token, or paste one? | paste |
+| Publish to GitHub Pages, and add Cloudflare later? | yes, GitHub Pages with no domain |
 
-Hand answers 1–4 to `site-identity`, `catalogue-curate` and `catalogue-sort`.
-Question 5 changes which script path `site-deploy` takes.
+The fourth question is last and pre-answered on purpose. GitHub Pages with no
+custom domain is the only mode that needs neither a second account nor a domain,
+so the journey can finish before it is asked. A user who ignores it still
+publishes; a user who wants Cloudflare answers, and `site-deploy` takes them
+through it as a follow-up.
+
+Hand answers 1–3 to `site-identity`, `catalogue-curate` and `catalogue-sort`.
+Question 4 becomes `deploy.targets`.
+
+**Never ask for a token in the conversation.** When Cloudflare is enabled, say
+which key is needed, tell the user to write it into `.env`, and run
+`npm run secrets:check` to confirm it is there. It prints whether the key
+exists, never the value.
 
 **Phase 2 — build the catalogue.** `catalogue-curate` applies the rules, then
 `npm run refresh` fetches. Report the three counts it returns: kept, empty,

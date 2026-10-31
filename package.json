@@ -7,10 +7,14 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
+    "build:gh": "DEPLOY_TARGET=github-pages astro build",
     "preview": "astro preview",
     "refresh": "node scripts/fetch-repos.mjs",
     "cf:setup": "node scripts/cf-setup.mjs",
-    "deploy": "node scripts/cf-deploy.mjs",
+    "deploy": "node scripts/deploy.mjs",
+    "deploy:cf": "node scripts/cf-deploy.mjs",
+    "deploy:gh": "node scripts/gh-deploy.mjs",
+    "secrets:check": "node scripts/secrets-check.mjs",
     "check:config": "node scripts/check-config.mjs",
     "compare:sites": "node scripts/compare-sites.mjs",
     "release:check": "node scripts/release.mjs --check",
@@ -21,6 +25,7 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.12",
+    "@types/node": "^26.6.6",
     "typescript": "^6.0.3",
     "wrangler": "^4.156.0"
   }
