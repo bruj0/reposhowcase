@@ -97,7 +97,7 @@ and nothing else.
 | `projectName` | Pages project name, and the `*.pages.dev` subdomain | required |
 | `productionBranch` | Branch name that owns the production alias | `main` |
 | `buildOutputDir` | Directory the build writes | `dist` |
-| `githubOwner` | Account whose repositories form the catalogue | `bruj0` |
+| `githubOwner` | Account whose repositories form the catalogue | `octocat` |
 | `customDomains` | Hostnames to serve, in addition to `*.pages.dev` | `[]` |
 | `tokenExpiryDays` | Deploy token lifetime; `0` means no expiry | `365` |
 | `deployTokenName` | Name of the token in the Cloudflare dashboard | `<projectName>-pages-deploy` |
@@ -205,7 +205,7 @@ remove one.
 So `cf:setup` detects the symptom and tells you where to look:
 
 ```
-! coderscorp.com: redirects to https://github.com/bruj0
+! example.com: redirects to https://github.com/octocat
   · a redirect rule or Page Rule on the zone is answering before Pages
 ```
 
@@ -224,15 +224,15 @@ negative or stale answer for a hostname that was created minutes ago. The step
 reports the socket code for exactly this reason:
 
 ```
-· bruj0.net: could not connect (ENOTFOUND)
+· example.com: could not connect (ENOTFOUND)
   local DNS may not have the new record yet; the site can still be live
 ```
 
 Check with a public resolver before believing it:
 
 ```bash
-dig +short @1.1.1.1 A bruj0.net
-curl -sI --resolve "bruj0.net:443:$(dig +short @1.1.1.1 A bruj0.net | head -1)" https://bruj0.net/
+dig +short @1.1.1.1 A example.com
+curl -sI --resolve "example.com:443:$(dig +short @1.1.1.1 A example.com | head -1)" https://example.com/
 ```
 
 ---
