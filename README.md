@@ -1,12 +1,64 @@
 # Repo Showcase
 
-Turn one GitHub account into a catalogue page: every repository you shipped,
-what it does, and where it runs.
+A catalogue page for everything you shipped, set up by asking an agent for it.
 
-The page is static HTML, rendered by [Astro](https://astro.build) and published
-to Cloudflare Pages. There is no server, no database, and no runtime GitHub
-call: the catalogue is a JSON file you commit, so every change to the page is a
-reviewable diff.
+![The catalogue page: a hero, filter rows for purpose, platform and language, four sort modes, and one card per repository](assets/screenshot.png)
+
+*One deployment with 53 repositories. The sample this repository ships has six.*
+
+Every public repository you own is a finished argument that almost nobody can
+find. GitHub sorts your profile by last push, and each entry is a name, a
+language, and one line of description. Nothing there says what the project
+does, what it runs on, or whether it is finished.
+
+Repo Showcase turns the same account into a page that answers those questions:
+one card per repository, filters for what it does and where it runs, and four
+ways to sort. It is static HTML rendered by [Astro](https://astro.build) and
+published to Cloudflare Pages, so there is no server, no database, and no call
+to GitHub at runtime. The catalogue is a JSON file you commit, which means every
+change to the page arrives as a reviewable diff.
+
+## Why you would use it
+
+| You have | You get |
+|---|---|
+| Forty repositories and no index of them | One page, filterable by purpose, platform and language |
+| A CV that claims breadth | A page that shows it, with links that resolve |
+| No appetite for another service to run | Static files on Cloudflare Pages, no server and no database |
+| A catalogue that goes stale | `npm run refresh` rewrites the data as a diff you can read |
+
+A domain is optional. Without one the site publishes to
+`<projectName>.pages.dev`, which needs no DNS permissions at all.
+
+## Why it is built around an agent
+
+Most site generators ask you to learn their config format. This one asks you to
+describe what you want, in a sentence.
+
+| You say | It writes |
+|---|---|
+| "Drop anything with no stars and fewer than ten files." | `catalogue.unnoticed = { maxStars: 0, maxViews: 0, maxFiles: 10 }` |
+| "Sort them by stars." | `sort.default = "stars"` |
+| "Point this at my account." | `githubOwner`, and the brand strings that use `{githubOwner}` |
+| "Only these repositories belong." | `catalogue.include = [...]` |
+
+The division is deliberate: **judgement belongs in prose, determinism belongs in
+scripts**. The agent decides what you meant and writes one key. The scripts read
+that key and never guess. No line of code decides which repositories are yours,
+which is why the same tree publishes a catalogue of 53 for one account and a
+catalogue of one for another without a source change.
+
+Seven skills in `.agents/skills/` carry the procedure, and `site-launch`
+sequences the other six. It asks the five questions only you can answer — which
+account, what the site is called, which repositories belong, a domain or a
+`*.pages.dev` subdomain, and whether to mint a token or paste one — then hands
+control back wherever a credential or a browser is needed, and resumes where it
+stopped.
+
+Each skill ends by checking its own work. `site-identity` greps the build for
+the name you are leaving behind. `catalogue-curate` reports the counts its rules
+produced. `site-deploy` fetches the URL and looks for the catalogue before it
+says "published". A skill that cannot check itself is a prompt, not a skill.
 
 ```
 site.config.json        your site: name, brand, account, domains, sort order
@@ -24,9 +76,6 @@ src/data/repos.json     the catalogue snapshot the page renders
 | A Cloudflare account | Cloudflare Pages hosts the site | You can build and preview locally, but not publish |
 | Node 22 or later | The build and the scripts | Nothing runs |
 
-A domain is optional. Without one the site publishes to
-`<projectName>.pages.dev`, which needs no DNS permissions at all.
-
 ## Quickstart
 
 ```bash
@@ -42,8 +91,8 @@ GITHUB_TOKEN=$(gh auth token) npm run refresh
 # 3. Look at it
 npm run dev
 
-# 4. Publish
-set -a; . ./.env; set +a      # after step 5
+# 4. Add .env (see Credentials), then publish
+set -a; . ./.env; set +a
 npm run cf:setup              # creates the Pages project, mints a deploy token
 npm run deploy
 ```
