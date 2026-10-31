@@ -18,6 +18,7 @@
     "check:config": "node scripts/check-config.mjs",
     "compare:sites": "node scripts/compare-sites.mjs",
     "sync:essay": "node scripts/sync-essay.mjs",
+    "docs:assemble": "node scripts/build-docs-site.mjs",
     "release:check": "node scripts/release.mjs --check",
     "release:sync": "node scripts/release.mjs --sync"
   },

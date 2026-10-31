@@ -10,5 +10,6 @@ dist/
 # MkDocs build output and the local virtualenv the docs build uses.
 /site/
 /_site/
+/site_src/
 .venv/
 __pycache__/

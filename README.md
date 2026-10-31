@@ -191,26 +191,44 @@ installed and no config is written.
 Every script in `scripts/` also accepts `--json` and `--dry-run`, so an agent
 can ask what a command would do before it does it.
 
-## The essay
+## The published documentation
 
-The long-form write-up of this project is published at
+The documentation is published at
 [bruj0.github.io/reposhowcase](https://bruj0.github.io/reposhowcase/), built
-with MkDocs Material from `essay/` and deployed to the `gh-pages` branch by
+with MkDocs Material and deployed to the `gh-pages` branch by
 `.github/workflows/docs.yml`.
 
-The canonical text lives in the author's `personal-docs` repository.
-`essay/index.md` is generated, never hand-edited:
+The landing page is the long-form essay — the account of how this project was
+researched, planned and built. The rest of the site is this README,
+[Deployment](docs/deployment.md) and [Hosting](docs/hosting.md):
+
+| Page | Source |
+|---|---|
+| `/` (essay) | `essay/index.md`, generated from the author's `personal-docs` |
+| `/readme/` | `README.md` |
+| `/deployment/` | `docs/deployment.md` |
+| `/hosting/` | `docs/hosting.md` |
+
+`npm run docs:assemble` copies those four documents into `site_src/`, which is
+what MkDocs reads. The staging step exists because MkDocs copies everything
+under `docs_dir` into the site, so pointing it at the repository root would
+publish `node_modules/` and `dist/`. Nothing is edited under `site_src/`.
+
+The essay has a canonical copy outside this repository, so its page is
+generated rather than hand-edited:
 
 ```bash
 node scripts/sync-essay.mjs           # regenerate essay/index.md
 node scripts/sync-essay.mjs --check   # exit 1 when the copy has drifted
+npm run docs:assemble                  # rebuild site_src/
 ```
 
-`ESSAY_SOURCE` overrides the canonical path. To build the page locally:
+`ESSAY_SOURCE` overrides the canonical path. To build the site locally:
 
 ```bash
 uv venv .venv --python 3.12
 uv pip install --python .venv/bin/python -r requirements-docs.txt
+npm run docs:assemble
 .venv/bin/mkdocs build --strict --site-dir _site   # or: .venv/bin/mkdocs serve
 ```
 
