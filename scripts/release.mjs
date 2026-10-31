@@ -337,43 +337,15 @@ function sync() {
     fs.readFileSync(path.join(root, 'package.json'), 'utf8'),
   ).version;
 
-  // Stage only what this run wrote or removed.
-  //
-  // `git add -A` also commits whatever else is sitting in the product's working
-  // tree. That is how a stray `_site/` build and a `mkdocs.yml` from another
-  // project reached a public repository: the sync took the whole tree, not the
-  // release set, and the whitelist stopped being a whitelist at the last step.
-  const touched = [...expected.keys(), ...extra];
-  execFileSync('git', ['add', '-A', '--', ...touched], { cwd: downstream });
-
-  const staged = execFileSync('git', ['diff', '--cached', '--name-only'], {
+  execFileSync('git', ['add', '-A'], { cwd: downstream, stdio: 'inherit' });
+  const status = execFileSync('git', ['status', '--porcelain'], {
     cwd: downstream,
     encoding: 'utf8',
-  })
-    .split('\n')
-    .filter(Boolean);
-
-  // Everything else that is dirty was not produced by this run. Report it, and
-  // leave it alone: neither committing nor deleting a file this script did not
-  // write is its decision to make.
-  const dirty = execFileSync('git', ['status', '--porcelain'], {
-    cwd: downstream,
-    encoding: 'utf8',
-  })
-    .split('\n')
-    .filter(Boolean)
-    .filter((line) => !staged.includes(line.slice(3).trim()));
-
-  if (dirty.length > 0) {
-    console.log('\ndirty but not staged, because this run did not write them:');
-    for (const line of dirty) console.log(`  ${line}`);
-  }
-
-  if (staged.length === 0) {
+  });
+  if (!status.trim()) {
     console.log('product is already up to date');
     return;
   }
-
   execFileSync('git', ['commit', '-m', `chore: sync from the instance at v${version}`], {
     cwd: downstream,
     stdio: 'inherit',
