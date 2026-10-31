@@ -18,6 +18,39 @@ GitHub Pages or Cloudflare Pages, so there is no server, no database, and no
 call to GitHub at runtime. The catalogue is a JSON file you commit, which means
 every change to the page arrives as a reviewable diff.
 
+## The stack
+
+| Piece | Choice | What it buys |
+|---|---|---|
+| Generator | [Astro 7](https://astro.build), static output | One HTML file, one stylesheet, one icon |
+| Host | Cloudflare Pages, GitHub Pages, or both | A key in the config decides; no code changes |
+| Data | A JSON snapshot committed to the repo | Builds offline and deterministically; every catalogue change is a reviewable diff |
+| Filtering | Plain JavaScript in the page | No framework runtime and no bundle to audit |
+| Server | none | Nothing to patch, restart or pay for |
+| Database | none | Nothing to back up, migrate or leak |
+| Config | `site.config.json` | One file decides brand, account, rules, host and domains |
+| Build | Node 22 or later | One command, no network |
+| Licence | MIT | Fork it and change the brand |
+
+Measured: the whole site is **three files and about 110 KB**. The catalogue is
+inlined into the page for search, so filtering makes no network request.
+
+**What it does**
+
+- Search, filters for purpose, platform and language, and four sort modes, all
+  applied in the browser.
+- Renders the full catalogue into the HTML. JavaScript filters it; it does not
+  build it, so the page still reads with scripts blocked.
+- Makes no third-party request: no web fonts, no analytics, no CDN script. The
+  only external URLs are the ones the page links to.
+- Publishes to one host or both, chosen by `deploy.targets`.
+
+**What it deliberately does not do**
+
+- No login, comments, telemetry or contact form. Each one adds a server or a
+  third party, which is the cost this design exists to avoid.
+- No server rendering and no API routes. Static output only.
+
 ## Why you would use it
 
 | You have | You get |
