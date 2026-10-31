@@ -1,0 +1,88 @@
+---
+import '../styles/global.css';
+import { site } from '../lib/site';
+
+interface Props {
+  title: string;
+  description: string;
+  /** Human-readable date the catalogue snapshot was last refreshed. */
+  buildLabel?: string;
+  /** ISO timestamp of the snapshot, used for the <time> element. */
+  buildStamp?: string;
+}
+
+const { title, description, buildLabel, buildStamp } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta name="generator" content={Astro.generator} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <slot name="head" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to catalogue</a>
+
+    <header class="site-header">
+      <div class="shell header-inner">
+        <a class="wordmark" href="/">
+          <span class="wordmark-mark" aria-hidden="true"></span>
+          <span class="wordmark-text">{site.brand.name.toUpperCase()}</span>
+        </a>
+        <nav class="site-nav" aria-label="Primary">
+          <a href="#lines">Production Lines</a>
+          <a href="#catalogue">Catalogue</a>
+          <a href="#method">Method</a>
+        </nav>
+        <a class="header-cta" href={site.brand.cta.href} rel="me noopener">
+          {site.brand.cta.label}
+        </a>
+      </div>
+    </header>
+
+    <main id="main">
+      <slot />
+    </main>
+
+    <footer class="site-footer">
+      <div class="shell footer-inner">
+        <div class="footer-brand">
+          <span class="wordmark-text">{site.brand.name.toUpperCase()}</span>
+          <p>{site.brand.eyebrow}. Every application listed here was built,
+            shipped and is maintained in the open.</p>
+        </div>
+        <div class="footer-links">
+          <div>
+            <h3>Catalogue</h3>
+            <ul>
+              <li><a href="#catalogue">All applications</a></li>
+            </ul>
+          </div>
+          <div>
+            <h3>Elsewhere</h3>
+            <ul>
+              {site.brand.links.map((link) => (
+                <li><a href={link.href}>{link.label}</a></li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="shell footer-base">
+        <p>&copy; {new Date().getFullYear()} {site.brand.name}</p>
+        <p class="footer-built">
+          Catalogue last rebuilt
+          <time datetime={buildStamp ?? ''}>{buildLabel ?? 'at build time'}</time>
+        </p>
+      </div>
+    </footer>
+  </body>
+</html>

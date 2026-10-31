@@ -1,0 +1,409 @@
+---
+import { site } from '../lib/site';
+
+/**
+ * The catalogue filter is the one piece of the page that needs to run in
+ * the browser, so it is the one Astro island. Everything else - the hero,
+ * the production lines, the cards themselves - is static HTML.
+ *
+ * The data arrives as a prop from the build-time fetch, so there is no
+ * client-side network call.
+ */
+interface Repo {
+  name: string;
+  description: string;
+  language: string;
+  stars: number;
+  domain: string;
+  updatedAt: string;
+  createdAt: string;
+  archived: boolean;
+  topics: string[];
+  /** Public repository URL. */
+  url: string;
+  /** Project site URL, empty when the repo has none. */
+  homepage: string;
+  /** Repository page views over the traffic API's 14-day window. */
+  views: number;
+  /** Unique viewers over the same window. */
+  uniques: number;
+  /** What the repository is for. */
+  purpose: string;
+  /** What it deploys to. */
+  platform: string;
+  /** The language it is written in. */
+  languageTag: string;
+}
+
+interface Props {
+  repos: Repo[];
+  domains: { id: string; label: string }[];
+}
+
+const { repos, domains } = Astro.props;
+
+// Display names for the controlled vocabulary. An acronym or a compound
+// word needs to be written down, because title-casing the slug produces
+// "Cicd" and "Self Hosted". The key set is closed, so a missing label is
+// a vocabulary change that forgot to update this map.
+const LABELS: Record<string, string> = {
+  agent: 'Agent',
+  cicd: 'CI/CD',
+  documentation: 'Documentation',
+  game: 'Game',
+  infrastructure: 'Infrastructure',
+  security: 'Security',
+  tooling: 'Tooling',
+  aws: 'AWS',
+  cloudflare: 'Cloudflare',
+  docker: 'Docker',
+  kubernetes: 'Kubernetes',
+  linux: 'Linux',
+  macos: 'macOS',
+  proxmox: 'Proxmox',
+  'self-hosted': 'Self-hosted',
+  virtualbox: 'VirtualBox',
+  windows: 'Windows',
+  go: 'Go',
+  html: 'HTML',
+  markdown: 'Markdown',
+  php: 'PHP',
+  python: 'Python',
+  rust: 'Rust',
+  shell: 'Shell',
+  terraform: 'Terraform',
+};
+
+// Labels for the sort modes named in site.config.json. An unknown mode falls
+// back to its own name rather than disappearing from the control.
+const SORT_LABELS: Record<string, string> = {
+  newest: 'Newest first',
+  views: 'Most viewed',
+  stars: 'Most starred',
+  name: 'Name',
+};
+
+// Serialised into the page so the island filters without a fetch.
+const payload = JSON.stringify(repos).replace(/</g, '\\u003c');
+
+// The three tag axes, each with its own controlled vocabulary. The
+// values come from the GitHub topics written by scripts/apply-topics.py.
+const AXES = [
+  {
+    key: 'purpose',
+    label: 'Purpose',
+    values: [...new Set(repos.map((r) => r.purpose).filter(Boolean))].sort(),
+  },
+  {
+    key: 'platform',
+    label: 'Platform',
+    values: [...new Set(repos.map((r) => r.platform).filter(Boolean))].sort(),
+  },
+  {
+    key: 'languageTag',
+    label: 'Language',
+    values: [...new Set(repos.map((r) => r.languageTag).filter(Boolean))].sort(),
+  },
+] as const;
+
+const pretty = (value: string) => LABELS[value] ?? value.charAt(0).toUpperCase() + value.slice(1);
+---
+
+<div class="catalogue-controls">
+  <div class="search-field">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"></circle>
+      <path d="m20 20-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+    </svg>
+    <input
+      type="search"
+      id="catalogue-search"
+      placeholder="Search applications..."
+      autocomplete="off"
+      aria-label="Search applications"
+    />
+  </div>
+
+  <div class="filter-group" role="group" aria-label="Filter by domain">
+    <button class="filter-btn" type="button" data-domain="all" aria-pressed="true">
+      All
+    </button>
+    {
+      domains.map((d) => (
+        <button class="filter-btn" type="button" data-domain={d.id} aria-pressed="false">
+          {d.label}
+        </button>
+      ))
+    }
+  </div>
+</div>
+
+<div class="tag-filters">
+  {
+    // An axis with no values would render an "All" button and nothing else.
+    AXES.filter((axis) => axis.values.length > 0).map((axis) => (
+      <div class="tag-axis">
+        <span class="tag-axis-label">{axis.label}</span>
+        <div class="filter-group" role="group" aria-label={`Filter by ${axis.label}`}>
+          <button
+            class="filter-btn"
+            type="button"
+            data-axis={axis.key}
+            data-value="all"
+            aria-pressed="true"
+          >
+            All
+          </button>
+          {axis.values.map((value) => (
+            <button
+              class="filter-btn"
+              type="button"
+              data-axis={axis.key}
+              data-value={value}
+              aria-pressed="false"
+            >
+              {pretty(value)}
+            </button>
+          ))}
+        </div>
+      </div>
+    ))
+  }
+</div>
+
+<div class="sort-row">
+  <span class="sort-label">Sort</span>
+  <div class="filter-group" role="group" aria-label="Sort the catalogue">
+    {site.sort.options.map((mode) => (
+      <button
+        class="filter-btn"
+        type="button"
+        data-sort={mode}
+        aria-pressed={mode === site.sort.default ? 'true' : 'false'}
+      >
+        {SORT_LABELS[mode] ?? mode}
+      </button>
+    ))}
+  </div>
+  <span class="sort-note" id="sort-note"></span>
+</div>
+
+<p class="catalogue-status" id="catalogue-status" role="status" aria-live="polite">
+  Showing {repos.length} applications
+</p>
+
+<div class="catalogue-grid" id="catalogue-grid">
+  {
+    repos.map((repo) => (
+      <article
+        class="card"
+        data-name={repo.name.toLowerCase()}
+        data-domain={repo.domain}
+        data-created={repo.createdAt}
+        data-views={repo.views}
+        data-stars={repo.stars}
+        data-purpose={repo.purpose}
+        data-platform={repo.platform}
+        data-language={repo.languageTag}
+      >
+        <div class="card-head">
+          <a class="card-name" href={repo.url} rel="noopener" target="_blank">
+            {repo.name}
+          </a>
+          <span class="card-domain">{repo.domain}</span>
+        </div>
+
+        <p class:list={['card-desc', { empty: !repo.description }]}>
+          {repo.description || 'No description provided.'}
+        </p>
+
+        <div class="card-tags">
+          {repo.purpose && <span class="tag tag-purpose">{pretty(repo.purpose)}</span>}
+          {repo.platform && <span class="tag tag-platform">{pretty(repo.platform)}</span>}
+          {repo.languageTag && (
+            <span class="tag tag-language">{pretty(repo.languageTag)}</span>
+          )}
+        </div>
+
+        <div class="card-foot">
+          <span class="card-lang">{repo.language}</span>
+          <span class="sep">/</span>
+          <span class="card-stars">&#9733; {repo.stars}</span>
+          <span class="sep">/</span>
+          <span title={`Created ${repo.createdAt.slice(0, 10)}`}>
+            {repo.createdAt.slice(0, 10)}
+          </span>
+          {
+            repo.views > 0 && (
+              <span class="sep">/</span>
+              <span class="card-views" title={`${repo.views} views, ${repo.uniques} unique`}>
+                {repo.views} views
+              </span>
+            )
+          }
+          {repo.archived && <span class="card-archived">Archived</span>}
+        </div>
+      </article>
+    ))
+  }
+</div>
+
+{repos.length === 0 ? (
+  <div class="empty-state visible" id="catalogue-first-run">
+    <p>
+      No applications yet. Run <code>npm run refresh</code> to fetch them from
+      GitHub.
+    </p>
+    {
+      site.catalogue.include.length > 0 && (
+        <p>
+          The catalogue is limited to {site.catalogue.include.length} named
+          repositories by <code>catalogue.include</code>.
+        </p>
+      )
+    }
+  </div>
+) : (
+  <div class="empty-state" id="catalogue-empty">
+    No application matches that filter.
+  </div>
+)}
+
+<script is:inline define:vars={{ payload, count: repos.length, sortDefault: site.sort.default }}>
+  // Vanilla JS, no framework. The island is small enough that a runtime
+  // would cost more than it saves.
+  const grid = document.getElementById('catalogue-grid');
+  const status = document.getElementById('catalogue-status');
+  const empty = document.getElementById('catalogue-empty');
+  const search = document.getElementById('catalogue-search');
+  const sortNote = document.getElementById('sort-note');
+  const domainButtons = Array.from(document.querySelectorAll('[data-domain]'));
+  const sortButtons = Array.from(document.querySelectorAll('[data-sort]'));
+  const tagButtons = Array.from(document.querySelectorAll('[data-axis]'));
+
+  const cards = Array.from(grid.querySelectorAll('.card'));
+
+  // The sort keys live on the card elements, so the DOM stays the
+  // single source of truth for both filtering and ordering.
+  const meta = new Map(
+    cards.map((card) => [
+      card,
+      {
+        name: card.dataset.name,
+        created: card.dataset.created,
+        views: Number(card.dataset.views ?? 0),
+        stars: Number(card.dataset.stars ?? 0),
+      },
+    ]),
+  );
+
+  // One selection per axis, each defaulting to "all". The axis name and
+  // the card's data attribute differ only for language, which is
+  // `data-language` because `data-languageTag` is not a valid dataset key
+  // once lowercased.
+  const axisFilters = { purpose: 'all', platform: 'all', languageTag: 'all' };
+
+  let activeDomain = 'all';
+  let query = '';
+  // The default comes from site.config.json, so "sort by stars" is a config
+  // edit rather than a code change.
+  let sortMode = sortDefault;
+
+  const comparators = {
+    // Most recent first.
+    newest: (a, b) => (a.created < b.created ? 1 : a.created > b.created ? -1 : 0),
+    // Most viewed first. A repo with no traffic sorts last.
+    views: (a, b) => (b.views - a.views) || (a.name < b.name ? -1 : 1),
+    // Most starred first, then alphabetically so equal counts keep an order.
+    stars: (a, b) => (b.stars - a.stars) || (a.name < b.name ? -1 : 1),
+    name: (a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0),
+  };
+
+  function apply() {
+    const q = query.trim().toLowerCase();
+    let shown = 0;
+
+    for (const card of cards) {
+      const domainOk = activeDomain === 'all' || card.dataset.domain === activeDomain;
+      const name = card.dataset.name;
+      const haystack = name + ' ' + card.textContent.toLowerCase();
+      const queryOk = q === '' || haystack.includes(q);
+
+      // Each axis is independent: a card passes when it matches the
+      // selected value on every axis that is not "all".
+      const axesOk =
+        (axisFilters.purpose === 'all' ||
+          card.dataset.purpose === axisFilters.purpose) &&
+        (axisFilters.platform === 'all' ||
+          card.dataset.platform === axisFilters.platform) &&
+        (axisFilters.languageTag === 'all' ||
+          card.dataset.language === axisFilters.languageTag);
+
+      const visible = domainOk && queryOk && axesOk;
+      card.style.display = visible ? '' : 'none';
+      if (visible) shown += 1;
+    }
+
+    // Reordering the DOM rather than rebuilding it keeps the filter state
+    // on each card intact.
+    const sorted = cards.slice().sort((a, b) => comparators[sortMode](meta.get(a), meta.get(b)));
+    for (const card of sorted) {
+      grid.appendChild(card);
+    }
+
+    status.textContent = `Showing ${shown} of ${count} applications`;
+    empty?.classList.toggle('visible', shown === 0);
+
+    if (sortMode === 'views') {
+      const tracked = cards.filter((c) => meta.get(c).views > 0).length;
+      sortNote.textContent = `${tracked} of ${count} repositories have traffic data`;
+    } else if (sortMode === 'newest') {
+      sortNote.textContent = 'Newest first';
+    } else {
+      sortNote.textContent = '';
+    }
+  }
+
+  for (const btn of domainButtons) {
+    btn.addEventListener('click', () => {
+      activeDomain = btn.dataset.domain;
+      for (const b of domainButtons) {
+        b.setAttribute('aria-pressed', String(b === btn));
+      }
+      apply();
+    });
+  }
+
+  for (const btn of sortButtons) {
+    btn.addEventListener('click', () => {
+      sortMode = btn.dataset.sort;
+      for (const b of sortButtons) {
+        b.setAttribute('aria-pressed', String(b === btn));
+      }
+      apply();
+    });
+  }
+
+  for (const btn of tagButtons) {
+    btn.addEventListener('click', () => {
+      const axis = btn.dataset.axis;
+      const value = btn.dataset.value;
+      axisFilters[axis] = value;
+
+      // Only the buttons on the clicked axis change state.
+      for (const b of tagButtons) {
+        if (b.dataset.axis === axis) {
+          b.setAttribute('aria-pressed', String(b === btn));
+        }
+      }
+      apply();
+    });
+  }
+
+  search.addEventListener('input', () => {
+    query = search.value;
+    apply();
+  });
+
+  apply();
+</script>

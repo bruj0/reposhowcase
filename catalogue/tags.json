@@ -1,0 +1,32 @@
+{
+  "ansible": {
+    "purpose": "infrastructure",
+    "platform": "linux",
+    "language": "python"
+  },
+  "kubernetes": {
+    "purpose": "infrastructure",
+    "platform": "kubernetes",
+    "language": "go"
+  },
+  "hugo": {
+    "purpose": "documentation",
+    "platform": "linux",
+    "language": "go"
+  },
+  "ohmyzsh": {
+    "purpose": "tooling",
+    "platform": "macos",
+    "language": "shell"
+  },
+  "mdBook": {
+    "purpose": "documentation",
+    "platform": "linux",
+    "language": "rust"
+  },
+  "composer": {
+    "purpose": "tooling",
+    "platform": "linux",
+    "language": "php"
+  }
+}

@@ -1,0 +1,92 @@
+{
+  "projectName": "reposhowcase",
+  "productionBranch": "main",
+  "buildOutputDir": "dist",
+  "githubOwner": "octocat",
+  "customDomains": [],
+  "tokenExpiryDays": 365,
+  "deployTokenName": "reposhowcase-pages-deploy",
+  "brand": {
+    "name": "Repo Showcase",
+    "eyebrow": "Sample catalogue",
+    "title": "{name} - A catalogue of what you shipped",
+    "description": "Repo Showcase turns one GitHub account into a catalogue page: what was built, what it does, and where it runs.",
+    "headline": "Everything you shipped, on <em>one</em> page.",
+    "lede": "{name} is a template. This page is the sample that ships with it, and the six repositories below belong to their own projects, not to this site. Set githubOwner to your account, run npm run refresh, and the catalogue becomes yours.",
+    "cta": {
+      "label": "github.com/{githubOwner}",
+      "href": "https://github.com/{githubOwner}"
+    },
+    "links": [
+      {
+        "label": "GitHub account",
+        "href": "https://github.com/{githubOwner}?tab=repositories"
+      },
+      {
+        "label": "GitHub",
+        "href": "https://github.com/{githubOwner}"
+      },
+      {
+        "label": "Source repos",
+        "href": "https://github.com/{githubOwner}?tab=repositories&type=source"
+      }
+    ]
+  },
+  "catalogue": {
+    "include": [],
+    "exclude": [],
+    "includeForks": false,
+    "includeArchived": false,
+    "empty": {
+      "stubReadmeBytes": 120,
+      "discussionBytes": 400
+    },
+    "unnoticed": {
+      "maxStars": 0,
+      "maxViews": 0,
+      "maxFiles": 10
+    }
+  },
+  "taxonomy": {
+    "purpose": [
+      "agent",
+      "cicd",
+      "documentation",
+      "game",
+      "infrastructure",
+      "security",
+      "tooling"
+    ],
+    "platform": [
+      "aws",
+      "cloudflare",
+      "docker",
+      "kubernetes",
+      "linux",
+      "macos",
+      "proxmox",
+      "self-hosted",
+      "virtualbox",
+      "windows"
+    ],
+    "language": [
+      "go",
+      "html",
+      "markdown",
+      "php",
+      "python",
+      "rust",
+      "shell",
+      "terraform"
+    ]
+  },
+  "sort": {
+    "default": "stars",
+    "options": [
+      "newest",
+      "views",
+      "stars",
+      "name"
+    ]
+  }
+}

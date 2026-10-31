@@ -1,0 +1,212 @@
+{
+  "fetchedAt": "2026-10-31T09:11:00.084Z",
+  "domains": [
+    {
+      "id": "agent-tooling",
+      "label": "Agent Tooling"
+    },
+    {
+      "id": "infrastructure",
+      "label": "Infrastructure"
+    },
+    {
+      "id": "security",
+      "label": "Security"
+    },
+    {
+      "id": "tooling",
+      "label": "Tooling"
+    },
+    {
+      "id": "application",
+      "label": "Applications"
+    }
+  ],
+  "repos": [
+    {
+      "name": "ansible",
+      "description": "Ansible is a radically simple IT automation platform that makes your applications and systems easier to deploy and maintain. Automate everything from code deployment to network configuration to cloud management, in a language that approaches plain English, using SSH, with no agents to install on remote systems. https://docs.ansible.com.",
+      "language": "Python",
+      "stars": 71174,
+      "forks": 24431,
+      "topics": [
+        "ansible",
+        "python",
+        "purpose-infrastructure",
+        "platform-linux",
+        "language-python"
+      ],
+      "purpose": "infrastructure",
+      "platform": "linux",
+      "languageTag": "python",
+      "url": "https://github.com/ansible/ansible",
+      "homepage": "https://www.ansible.com/",
+      "updatedAt": "2026-10-30T18:56:37Z",
+      "createdAt": "2012-03-06T14:58:02Z",
+      "archived": false,
+      "domain": "infrastructure",
+      "views": 0,
+      "uniques": 0,
+      "hasReadme": true,
+      "empty": false
+    },
+    {
+      "name": "kubernetes",
+      "description": "Production-Grade Container Scheduling and Management",
+      "language": "Go",
+      "stars": 128566,
+      "forks": 46377,
+      "topics": [
+        "cncf",
+        "containers",
+        "go",
+        "kubernetes",
+        "purpose-infrastructure",
+        "platform-kubernetes",
+        "language-go"
+      ],
+      "purpose": "infrastructure",
+      "platform": "kubernetes",
+      "languageTag": "go",
+      "url": "https://github.com/kubernetes/kubernetes",
+      "homepage": "https://kubernetes.io",
+      "updatedAt": "2026-10-31T08:43:40Z",
+      "createdAt": "2014-06-06T22:56:04Z",
+      "archived": false,
+      "domain": "infrastructure",
+      "views": 0,
+      "uniques": 0,
+      "hasReadme": true,
+      "empty": false
+    },
+    {
+      "name": "hugo",
+      "description": "The world’s fastest framework for building websites.",
+      "language": "Go",
+      "stars": 90296,
+      "forks": 8434,
+      "topics": [
+        "blog-engine",
+        "cms",
+        "content-management-system",
+        "documentation-tool",
+        "go",
+        "hugo",
+        "static-site-generator",
+        "purpose-documentation",
+        "platform-linux",
+        "language-go"
+      ],
+      "purpose": "documentation",
+      "platform": "linux",
+      "languageTag": "go",
+      "url": "https://github.com/gohugoio/hugo",
+      "homepage": "https://gohugo.io",
+      "updatedAt": "2026-10-30T18:58:58Z",
+      "createdAt": "2013-07-04T15:26:26Z",
+      "archived": false,
+      "domain": "application",
+      "views": 0,
+      "uniques": 0,
+      "hasReadme": true,
+      "empty": false
+    },
+    {
+      "name": "ohmyzsh",
+      "description": "🙃   A delightful community-driven (with 2,500+ contributors) framework for managing your zsh configuration. Includes 300+ optional plugins (rails, git, macOS, hub, docker, homebrew, node, php, python, etc), 140+ themes to spice up your morning, and an auto-update tool that makes it easy to keep up with the latest updates from the community.",
+      "language": "Shell",
+      "stars": 190255,
+      "forks": 28663,
+      "topics": [
+        "cli",
+        "cli-app",
+        "oh-my-zsh",
+        "oh-my-zsh-plugin",
+        "oh-my-zsh-theme",
+        "ohmyzsh",
+        "plugin-framework",
+        "plugins",
+        "productivity",
+        "shell",
+        "terminal",
+        "theme",
+        "themes",
+        "zsh",
+        "zsh-configuration",
+        "purpose-tooling",
+        "platform-macos",
+        "language-shell"
+      ],
+      "purpose": "tooling",
+      "platform": "macos",
+      "languageTag": "shell",
+      "url": "https://github.com/ohmyzsh/ohmyzsh",
+      "homepage": "https://ohmyz.sh",
+      "updatedAt": "2026-10-27T11:37:50Z",
+      "createdAt": "2009-08-28T18:15:37Z",
+      "archived": false,
+      "domain": "tooling",
+      "views": 0,
+      "uniques": 0,
+      "hasReadme": true,
+      "empty": false
+    },
+    {
+      "name": "mdBook",
+      "description": "Create book from markdown files. Like Gitbook but implemented in Rust",
+      "language": "Rust",
+      "stars": 22254,
+      "forks": 1912,
+      "topics": [
+        "purpose-documentation",
+        "platform-linux",
+        "language-rust"
+      ],
+      "purpose": "documentation",
+      "platform": "linux",
+      "languageTag": "rust",
+      "url": "https://github.com/rust-lang/mdBook",
+      "homepage": "https://rust-lang.github.io/mdBook/",
+      "updatedAt": "2026-10-30T16:07:35Z",
+      "createdAt": "2015-07-07T00:57:25Z",
+      "archived": false,
+      "domain": "application",
+      "views": 0,
+      "uniques": 0,
+      "hasReadme": true,
+      "empty": false
+    },
+    {
+      "name": "composer",
+      "description": "Dependency Manager for PHP",
+      "language": "PHP",
+      "stars": 29571,
+      "forks": 4861,
+      "topics": [
+        "composer",
+        "dependency-manager",
+        "package-manager",
+        "packages",
+        "php",
+        "purpose-tooling",
+        "platform-linux",
+        "language-php"
+      ],
+      "purpose": "tooling",
+      "platform": "linux",
+      "languageTag": "php",
+      "url": "https://github.com/composer/composer",
+      "homepage": "https://getcomposer.org/",
+      "updatedAt": "2026-10-30T15:52:56Z",
+      "createdAt": "2011-06-08T08:53:00Z",
+      "archived": false,
+      "domain": "application",
+      "views": 0,
+      "uniques": 0,
+      "hasReadme": true,
+      "empty": false
+    }
+  ],
+  "skipped": [],
+  "unnoticed": []
+}

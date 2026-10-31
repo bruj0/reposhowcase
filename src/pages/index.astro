@@ -1,0 +1,156 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Catalogue from '../components/Catalogue.astro';
+import catalogue from '../data/repos.json';
+import { site } from '../lib/site';
+
+// The catalogue is read from a committed snapshot, not fetched at build
+// time. The build stays offline and deterministic, and a catalogue change
+// arrives as a reviewable diff rather than as a silent redeploy.
+const repos = catalogue.repos;
+const domains = catalogue.domains;
+
+const languageCount = new Set(repos.map((r) => r.language)).size;
+const liveSites = repos.filter((r) => r.homepage).length;
+const totalStars = repos.reduce((sum, r) => sum + r.stars, 0);
+
+const fetchedAt = new Date(catalogue.fetchedAt);
+const buildLabel = fetchedAt.toISOString().slice(0, 10);
+const buildStamp = fetchedAt.toISOString();
+---
+
+<Layout
+  title={site.brand.title}
+  description={site.brand.description}
+  buildLabel={buildLabel}
+  buildStamp={buildStamp}
+>
+  <!-- Hero -->
+  <section class="hero">
+    <div class="shell">
+      <p class="hero-eyebrow">{site.brand.eyebrow}</p>
+      <h1 class="hero-title" set:html={site.brand.headline} />
+      <p class="hero-lede">{site.brand.lede}</p>
+
+      <div class="hero-stats">
+        <div>
+          <span class="stat-value accent">{repos.length}</span>
+          <span class="stat-label">Applications shipped</span>
+        </div>
+        <div>
+          <span class="stat-value">{languageCount}</span>
+          <span class="stat-label">Languages in production</span>
+        </div>
+        <div>
+          <span class="stat-value">{liveSites}</span>
+          <span class="stat-label">With a live deployment</span>
+        </div>
+        <div>
+          <span class="stat-value">{totalStars}</span>
+          <span class="stat-label">Stars across the catalogue</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Production lines -->
+  <section class="section" id="lines">
+    <div class="shell">
+      <div class="section-head">
+        <span class="section-index">01</span>
+        <h2 class="section-title">Production lines</h2>
+        <span class="section-note">How the work gets made</span>
+      </div>
+
+      <div class="lines-grid">
+        <div class="line">
+          <span class="line-number">LINE 01</span>
+          <h3 class="line-title">Specification first</h3>
+          <p class="line-desc">
+            A build starts as a written contract, not a prompt. The specification
+            is the artifact; the code follows it.
+          </p>
+        </div>
+        <div class="line">
+          <span class="line-number">LINE 02</span>
+          <h3 class="line-title">Reproducible delivery</h3>
+          <p class="line-desc">
+            Infrastructure is declared, pinned and re-runnable. A deployment is
+            a function of a commit, never of a shell history.
+          </p>
+        </div>
+        <div class="line">
+          <span class="line-number">LINE 03</span>
+          <h3 class="line-title">Boring operations</h3>
+          <p class="line-desc">
+            Services run under systemd, expose health checks, and repair
+            themselves. Nothing depends on a developer being awake.
+          </p>
+        </div>
+        <div class="line">
+          <span class="line-number">LINE 04</span>
+          <h3 class="line-title">Open by default</h3>
+          <p class="line-desc">
+            The catalogue is built from public repositories, and the tooling that
+            builds the catalogue is public too.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Catalogue -->
+  <section class="section" id="catalogue">
+    <div class="shell">
+      <div class="section-head">
+        <span class="section-index">02</span>
+        <h2 class="section-title">The catalogue</h2>
+        <span class="section-note">{repos.length} public applications, created not forked</span>
+      </div>
+
+      <Catalogue repos={repos} domains={domains} />
+    </div>
+  </section>
+
+  <!-- Method -->
+  <section class="section" id="method">
+    <div class="shell">
+      <div class="section-head">
+        <span class="section-index">03</span>
+        <h2 class="section-title">Method</h2>
+        <span class="section-note">Rules the factory holds to</span>
+      </div>
+
+      <div class="method-grid">
+        <div class="method-item">
+          <h3><span>§1</span> Ships or it does not exist</h3>
+          <p>
+            A repository counts when something runs against it. Half-finished
+            work stays private until it works end to end.
+          </p>
+        </div>
+        <div class="method-item">
+          <h3><span>§2</span> The second run must be quiet</h3>
+          <p>
+            Every delivery is idempotent. A repeat install reports no change,
+            which is the only honest proof that the automation is correct.
+          </p>
+        </div>
+        <div class="method-item">
+          <h3><span>§3</span> Measure, then claim</h3>
+          <p>
+            Numbers in this catalogue come from the GitHub API at build time.
+            Nothing is hand-maintained, so nothing drifts quietly.
+          </p>
+        </div>
+        <div class="method-item">
+          <h3><span>§4</span> Fail loudly at the boundary</h3>
+          <p>
+            Errors carry the trace that produced them and the command that
+            investigates them. A silent failure is a design defect.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+</Layout>

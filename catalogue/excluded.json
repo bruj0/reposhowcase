@@ -1,0 +1,19 @@
+[
+  {
+    "name": "example-forked-project",
+    "rule": "fork",
+    "measured": {
+      "visibility": "public",
+      "fork": true,
+      "archived": false
+    }
+  },
+  {
+    "name": "example-stub-repository",
+    "rule": "empty",
+    "measured": {
+      "fileCount": 1,
+      "readmeSize": 0
+    }
+  }
+]
