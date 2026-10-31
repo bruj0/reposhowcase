@@ -1,0 +1,8 @@
+# Documentation site dependencies.
+#
+# Kept as a requirements file rather than a `pyproject.toml` so this stays a
+# Node project that happens to build a docs site, not a Python package. The
+# workflow installs exactly these versions with `pip install -r`.
+mkdocs>=1.6.1,<2
+mkdocs-material>=9.5.50,<10
+pymdown-extensions>=10.14,<11
