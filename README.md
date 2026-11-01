@@ -2,6 +2,8 @@
 
 A catalogue page for everything you shipped, set up by asking an agent for it.
 
+Live at: https://bruj0.net/
+
 ![The catalogue page: a hero, filter rows for purpose, platform and language, four sort modes, and one card per repository](assets/screenshot.png)
 
 *One deployment with 53 repositories. The sample this repository ships has six.*
